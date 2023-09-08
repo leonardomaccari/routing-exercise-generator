@@ -10,12 +10,14 @@ from collections import defaultdict
 import time
 import pprint
 import networkx as nx
+import copy
 
 class RoutingProtocol():
     queue = []
     rt = defaultdict(dict)
     g = None
     messages = []
+    max_cost = 10000
     def next_event(self):
         time.sleep(0.1)
         if self.queue:
@@ -54,22 +56,24 @@ class RoutingProtocol():
         return len(path) == pl
         
 class DistanceVector(RoutingProtocol):
-    def __init__(self, g, debug=False):
+    def __init__(self, g, debug=False, poison_reverse=False):
         self.g = g
         self.debug = debug
+        self.poison=poison_reverse
         for node in sorted(g.nodes()):
             self.push_event((node,'DV'))
             self.rt[node] = {node: {'nh':node, 'cost':0, 'time':0}}
 
         
-    def manage_event(self, e, poison=False, debug=False):
+    def manage_event(self, e, debug=False):
         node = e[0]
         neighs = sorted(self.g.neighbors(node))
         for n in neighs:
-            if not poison:
-                dv = self.rt[node]
-            else:
-                pass # need to implement poison reverse
+            dv = copy.deepcopy(self.rt[node])
+            if self.poison:
+                for d,line in dv.items():
+                    if line['nh'] == n:
+                        line['cost'] = self.max_cost
             if self.receive_dv(dv, node, n):
                 msg = f'{node} -> {n}   '
                 msg += self.format_dv(dv)

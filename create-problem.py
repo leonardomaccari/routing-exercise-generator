@@ -12,7 +12,7 @@ from format_file import save_document
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', choices=['DV'], help="Routing protocol", 
+    parser.add_argument('-r', choices=['DV', 'DVPR'], help="Routing protocol", 
                         default='DV')
     parser.add_argument('-n', type=int, help="Graph Size",
                         default='2')
@@ -38,6 +38,8 @@ if __name__ == '__main__':
     #create_graph.show_graph(g)
     if args.r == 'DV':
         dv = DistanceVector(g)
+    elif args.r == 'DVPR':
+            dv = DistanceVector(g, poison_reverse=True)
     while True:
         e = dv.next_event()
         if e:
