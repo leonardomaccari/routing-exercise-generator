@@ -56,16 +56,13 @@ def make_grid_graph(n, w=False):
 
 @relabel_nodes
 @add_weights
-def make_random_graph(n, w=False, prob=0, seed=0):
-    seed = set_seed(seed)
+def make_random_graph(n, w=False, prob=0):
     if not prob:
         prob = log(n)/n
     for i in range(100):
         g = nx.erdos_renyi_graph(n, prob)
         if nx.is_connected(g) and list(nx.simple_cycles(g)):
-            print(list(nx.simple_cycles(g)))
             break
-            
     else:
         print("Disconnected graph, increase the edge probability")
         exit()

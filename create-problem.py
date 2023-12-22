@@ -10,6 +10,7 @@ import create_graph
 from distance_vector import DistanceVector
 from format_file import save_document
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('-r', choices=['DV', 'DVPR'], help="Routing protocol", 
@@ -24,6 +25,7 @@ def parse_arguments():
                         help="Type of Graph", default='line')
     parser.add_argument('-f', type=str, help='File where to save the exercise',
                          default='./exercise.pdf')
+    parser.add_argument('-s', type=int, help='Random seed to use')
     args = parser.parse_args()
     return args
     
@@ -31,7 +33,8 @@ def parse_arguments():
 
 if __name__ == '__main__':
     args = parse_arguments()
-    
+    if args.s:
+        seed = create_graph.set_seed(args.s)
     match args.g:
         case 'random':
             g = create_graph.make_random_graph(args.n, w=args.w)
@@ -44,6 +47,7 @@ if __name__ == '__main__':
         dv = DistanceVector(g)
     elif args.r == 'DVPR':
             dv = DistanceVector(g, poison_reverse=True)
+
     while True:
         e = dv.next_event()
         if e:
