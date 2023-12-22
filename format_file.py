@@ -43,7 +43,6 @@ You can omit messages that are received but do not alter the routing table of th
 '''
 
 def save_document(g, updates, rt, args, fname='./exercise.pdf'):
-    plt.savefig('/tmp/graph.png')
     base_url = os.path.dirname(os.path.realpath(__file__))
     font_config = FontConfiguration()
     body = ''
@@ -57,7 +56,10 @@ def save_document(g, updates, rt, args, fname='./exercise.pdf'):
         f'{fname}', stylesheets=[css],
         font_config=font_config)
 def format_titlepage(g):
-    nx.draw_networkx(g)
+    pos = nx.spring_layout(g)
+    nx.draw(g, pos, with_labels=True)
+    labels = nx.get_edge_attributes(g,'cost')
+    nx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
     plt.savefig('/tmp/graph.png')
     
     title='<h1>Routing Exercise</h1>'
@@ -85,7 +87,7 @@ def format_rt(rt):
         item = f'<dt>{host}</dt>\n'
         item += '<ol>\n'
         for dest in h_rt:
-            item += f'<li>{dest}:{h_rt[dest]["nh"]}</li>\n'
+            item += f'<li>{dest}: nh={h_rt[dest]["nh"]}, cost={h_rt[dest]["cost"]}</li>\n'
         item += '</ol>\n'
         rt_text += item
     rt_text += '</dl>\n'

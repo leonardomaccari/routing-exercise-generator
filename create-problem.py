@@ -16,6 +16,10 @@ def parse_arguments():
                         default='DV')
     parser.add_argument('-n', type=int, help="Graph Size",
                         default='2')
+    parser.add_argument('-w', type=int, help="Adds random integer weights"
+                        " from a geomertric distrbution with average W."
+                        " This produces many values<=W, and a few high ones.",
+                        default=0)
     parser.add_argument('-g', choices=['random', 'line', 'grid'], 
                         help="Type of Graph", default='line')
     parser.add_argument('-f', type=str, help='File where to save the exercise',
@@ -30,11 +34,11 @@ if __name__ == '__main__':
     
     match args.g:
         case 'random':
-            g = create_graph.make_random_graph(args.n)
+            g = create_graph.make_random_graph(args.n, w=args.w)
         case 'line':
-            g = create_graph.make_line(args.n)
+            g = create_graph.make_line(args.n, w=args.w)
         case 'grid':
-            g = create_graph.make_grid_graph(args.n)
+            g = create_graph.make_grid_graph(args.n, w=args.w)
     #create_graph.show_graph(g)
     if args.r == 'DV':
         dv = DistanceVector(g)

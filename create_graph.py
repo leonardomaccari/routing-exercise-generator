@@ -7,7 +7,7 @@ Created on Thu Sep  7 08:17:55 2023
 """
 
 import random
-from numpy.random import seed as np_seed
+from numpy.random import seed as np_seed, geometric 
 from numpy import log
 import networkx as nx
 import time
@@ -23,7 +23,18 @@ def relabel_nodes(func):
         return nx.convert_node_labels_to_integers(g, first_label=1)
     return wrapper
 
-
+def add_weights(func):
+    def wrapper(*args, **kwargs):
+        g = func(*args, **kwargs)
+        for frm, to in g.edges:
+            if not kwargs['w']:
+                g[frm][to]['cost'] = 1
+            else:
+                g[frm][to]['cost'] = geometric(1/kwargs['w'])
+        return g
+    return wrapper
+        
+        
 def set_seed(seed):
     if not seed:
         seed = int(time.time_ns()%2**32)
@@ -32,24 +43,29 @@ def set_seed(seed):
     return seed
 
 @relabel_nodes
-def make_line(n):
+@add_weights
+def make_line(n, w=False):
     g = nx.path_graph(n)
     return g
 
 @relabel_nodes
-def make_grid_graph(n):
+@add_weights
+def make_grid_graph(n, w=False):
     g = nx.grid_2d_graph(n, n)
     return g
 
 @relabel_nodes
-def make_random_graph(n, prob=0, seed=0):
+@add_weights
+def make_random_graph(n, w=False, prob=0, seed=0):
     seed = set_seed(seed)
     if not prob:
         prob = log(n)/n
     for i in range(100):
         g = nx.erdos_renyi_graph(n, prob)
-        if nx.is_connected(g):
+        if nx.is_connected(g) and list(nx.simple_cycles(g)):
+            print(list(nx.simple_cycles(g)))
             break
+            
     else:
         print("Disconnected graph, increase the edge probability")
         exit()
@@ -59,6 +75,9 @@ def make_random_graph(n, prob=0, seed=0):
 
     
 def show_graph(g):
-    nx.draw_networkx(g, with_labels=True)
+    pos = nx.spring_layout(g)
+    nx.draw(g, pos, with_labels=True)
+    labels = nx.get_edge_attributes(g,'cost')
+    nx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
     plt.show()
     

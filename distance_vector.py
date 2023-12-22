@@ -19,7 +19,7 @@ class RoutingProtocol():
     messages = []
     max_cost = 10000
     def next_event(self):
-        time.sleep(0.1)
+        time.sleep(0.01)
         if self.queue:
             return self.queue.pop(0)
         else:
@@ -41,19 +41,20 @@ class RoutingProtocol():
         return True
                 
     def navigate_rt(self, src, dst):
-        pl = nx.shortest_path_length(self.g, src, dst)
-        path = []
+        pl = nx.shortest_path_length(self.g, src, dst, weight='cost')
+        path_cost = 0
         nh = src
         while True:
             try:
                 if nh == dst:
                     break
+                if not path_cost:
+                    path_cost = self.rt[nh][dst]['cost']
                 nh = self.rt[nh][dst]['nh']
-                path.append(nh)
                 
             except KeyError:
                 return False
-        return len(path) == pl
+        return path_cost == pl
         
 class DistanceVector(RoutingProtocol):
     def __init__(self, g, debug=False, poison_reverse=False):
@@ -89,10 +90,13 @@ class DistanceVector(RoutingProtocol):
             self.push_event((node,'DV'))
         
     def receive_dv(self, dv, src, dest):
-        link_cost = 1
+        link_cost = self.g[dest][src]['cost']
         rt = self.rt[dest]
         modified = False
         for d in dv:
+            if self.poison:
+                if dv[d]['cost'] == self.max_cost:
+                    continue
             if not (d in rt):
                 # new route
                 rt[d] = {}
@@ -109,6 +113,9 @@ class DistanceVector(RoutingProtocol):
                     rt[d]['nh'] = src
                     rt[d]['time'] = 0
                     modified = True
+  
+
+
         return modified
                     
     def format_dv(self, dv):
