@@ -54,6 +54,14 @@ def make_grid_graph(n, w=False):
     g = nx.grid_2d_graph(n, n)
     return g
 
+
+@relabel_nodes
+@add_weights
+def make_full_mesh(n, w=False):
+    g = nx.complete_graph(n)
+    return g
+
+
 @relabel_nodes
 @add_weights
 def make_random_graph(n, w=False, prob=0):

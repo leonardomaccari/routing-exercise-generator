@@ -18,10 +18,10 @@ def parse_arguments():
     parser.add_argument('-n', type=int, help="Graph Size",
                         default='2')
     parser.add_argument('-w', type=int, help="Adds random integer weights"
-                        " from a geomertric distrbution with average W."
+                        " from a geometric distrbution with average W."
                         " This produces many values<=W, and a few high ones.",
                         default=0)
-    parser.add_argument('-g', choices=['random', 'line', 'grid'], 
+    parser.add_argument('-g', choices=['random', 'line', 'grid', 'full_mesh'], 
                         help="Type of Graph", default='line')
     parser.add_argument('-f', type=str, help='File where to save the exercise',
                          default='./exercise.pdf')
@@ -42,6 +42,8 @@ if __name__ == '__main__':
             g = create_graph.make_line(args.n, w=args.w)
         case 'grid':
             g = create_graph.make_grid_graph(args.n, w=args.w)
+        case 'full_mesh':
+            g = create_graph.make_full_mesh(args.n, w=args.w)
     #create_graph.show_graph(g)
     if args.r == 'DV':
         dv = DistanceVector(g)
