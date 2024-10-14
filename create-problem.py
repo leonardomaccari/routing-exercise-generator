@@ -7,7 +7,7 @@ Created on Thu Sep  7 08:21:26 2023
 """
 import argparse
 import create_graph
-from distance_vector import DistanceVector
+from distance_vector import DistanceVector, LinkState
 from format_file import save_document
 
 
@@ -49,6 +49,8 @@ if __name__ == '__main__':
         dv = DistanceVector(g)
     elif args.r == 'DVPR':
             dv = DistanceVector(g, poison_reverse=True)
+    elif args.r == 'LS':
+        dv = LinkState(g)
 
     while True:
         e = dv.next_event()
@@ -57,4 +59,8 @@ if __name__ == '__main__':
         else:
             break
     #create_graph.show_graph(g)
+
+    if args.r == 'LS':
+        dv.construct_rt()
+    
     save_document(g, dv.messages, dv.rt, args, fname=args.f)

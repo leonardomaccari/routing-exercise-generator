@@ -120,4 +120,82 @@ class DistanceVector(RoutingProtocol):
                     
     def format_dv(self, dv):
         return '; '.join([f"{d}:{dv[d]['cost']}" for d in sorted(dv)])
+    
+class LinkState(RoutingProtocol):
+    def __init__(self, g, debug=False):
+        self.g = g
+        self.debug = debug
+        self.lsp = defaultdict(dict)
+        self.lspdb = defaultdict(dict)
+
+        for node in sorted(g.nodes()):
+            # HELLO messages phase, each LSP contains:
+            #   [+] Node ID
+            #   [+] Sequence number --> initialized to 0 --> It will be useful if we introduce errors on links
+            #       So far, we check the presence of the LSP in the LSP Database in order to decide if the 
+            #       received LSP is new or not
+            #   [+] Links to neighbors and their costs
+            self.lsp[node] = {'id': node, 'seq': 0, 'links': []}
+            
+            # Initialize the LSP Database - Part 1
+            self.lspdb[node][node] = []
+
+            for n in g.neighbors(node):
+                self.lsp[node]['links'].append({'id_neigh': n, 'cost': g[n][node]['cost']})
+
+                # Initialize the LSP Database - Part 2
+                self.lspdb[node][node].append((node, n, {'cost': g[n][node]['cost']}))
+           
+            # After the HELLO messages, queue events in order to send the LSP
+            # Structure of an event ------------------- > (owner, sender, type) 
+            #                                                |      |       |   
+            #   node that owns the event the LS <------------+      |       |
+            #   node that sends the LS -----------------------------+       |
+            #   type of event ----------------------------------------------+     
+            self.push_event((node, node, 'LS')) 
+
+    def construct_rt(self):
+        for node in sorted(self.g.nodes()):
+            tmp = chain.from_iterable([lists for lists in self.lspdb[node].values()])   # For each node Get all the links 
+                                                                                        # contained in its own LSP Database
+
+            tmp_graph = nx.Graph()
+            tmp_graph.add_edges_from(tmp)
+
+            shortest_paths = nx.single_source_dijkstra_path(tmp_graph, node, weight='cost')
+            path_lengths = nx.single_source_dijkstra_path_length(tmp_graph, node, weight='cost')
+
+            for dest in sorted(self.g.nodes()):
+                self.rt[node][dest] = {'path': shortest_paths[dest], 'cost': path_lengths[dest]}
+
+
+
+    def manage_event(self, event, debug=False):
+        owner, sender, _ = event
+
+        for neigh in self.g.neighbors(sender):
+            if owner != neigh and self.receiving_lsp(self.lsp[owner], sender, neigh):
+                self.push_event((owner, neigh,  'LS'))
+
+                # Add the format message to print
+                msg = f'{sender} -> {neigh} | {owner}>'
+                self.messages.append(msg)
+        
+        if not self.queue: 
+            self.construct_rt()
+
+
+
+    def receiving_lsp(self, received_lsp, src, dst):
+        dst_lspdb = self.lspdb[dst]         # LSP Database of the destination node: dict
+        ownerLSP = received_lsp['id']       # Node ID of the owner of the LSP
+
+        if ownerLSP in dst_lspdb.keys():    # So far, we check the presence of the LSP in the LSP Database in order 
+                                            # to decide if the received LSP is new or not
+            print(f'LSP of {ownerLSP}, sent from {src} is already in LSPDB of {dst}')
+            return False
+
+        self.lspdb[dst][ownerLSP] = [(ownerLSP, neigh['id_neigh'], {'cost': neigh['cost']}) for neigh in received_lsp['links']]
+
+        return True
             

@@ -49,7 +49,7 @@ def save_document(g, updates, rt, args, fname='./exercise.pdf'):
     body += format_titlepage(g)
     body += exercise_text.format(routing=args.r)
     body += format_solution(updates)
-    body += format_rt(rt)
+    body += format_rt(rt, args.r)
     html = HTML(string=body, base_url=base_url)
     css = CSS(string=css_string, font_config=font_config)
     html.write_pdf(
@@ -79,7 +79,7 @@ def format_solution(updates):
     
     return  solutions     
 
-def format_rt(rt):
+def format_rt(rt, routing):
     rt_text = '<h2>Final Routing Table</h2>\n'
     rt_text +='<dl>\n'
     for host in rt:
@@ -87,7 +87,10 @@ def format_rt(rt):
         item = f'<dt>{host}</dt>\n'
         item += '<ol>\n'
         for dest in h_rt:
-            item += f'<li>{dest}: nh={h_rt[dest]["nh"]}, cost={h_rt[dest]["cost"]}</li>\n'
+            if routing == 'LS':
+                item += f'<li>{dest}: path={"->".join(str(elem) for elem in h_rt[dest]["path"])}, cost={h_rt[dest]["cost"]}</li>\n'
+            else:
+                item += f'<li>{dest}: nh={h_rt[dest]["nh"]}, cost={h_rt[dest]["cost"]}</li>\n'
         item += '</ol>\n'
         rt_text += item
     rt_text += '</dl>\n'
