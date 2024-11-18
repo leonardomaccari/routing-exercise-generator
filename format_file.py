@@ -40,7 +40,7 @@ Consider the network in the figure and assume that:
 
 Write down the list of generated messages, and the final routing table. 
 You can omit messages that are received but do not alter the routing table of the receing router.
-'''
+'''.format(routing='LS')
 
 def save_document(g, updates, rt, args, fname='./exercise.pdf'):
     base_url = os.path.dirname(os.path.realpath(__file__))
@@ -55,6 +55,7 @@ def save_document(g, updates, rt, args, fname='./exercise.pdf'):
     html.write_pdf(
         f'{fname}', stylesheets=[css],
         font_config=font_config)
+    
 def format_titlepage(g):
     pos = nx.spring_layout(g)
     nx.draw(g, pos, with_labels=True)

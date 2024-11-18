@@ -11,7 +11,8 @@ import time
 import pprint
 import networkx as nx
 import copy
-
+from itertools import chain
+import matplotlib.pyplot as plt
 class RoutingProtocol():
     queue = []
     rt = defaultdict(dict)
@@ -122,11 +123,13 @@ class DistanceVector(RoutingProtocol):
         return '; '.join([f"{d}:{dv[d]['cost']}" for d in sorted(dv)])
     
 class LinkState(RoutingProtocol):
-    def __init__(self, g, debug=False):
+    def __init__(self, g, debug=False, node_list: list[int] = None):
         self.g = g
         self.debug = debug
         self.lsp = defaultdict(dict)
         self.lspdb = defaultdict(dict)
+        self.node_list = node_list
+        self.counter = 0
 
         for node in sorted(g.nodes()):
             # HELLO messages phase, each LSP contains:
@@ -138,13 +141,13 @@ class LinkState(RoutingProtocol):
             self.lsp[node] = {'id': node, 'seq': 0, 'links': []}
             
             # Initialize the LSP Database - Part 1
-            self.lspdb[node][node] = []
+            self.lspdb[node][node] = [] # For each node we have an entry for itself
 
             for n in g.neighbors(node):
-                self.lsp[node]['links'].append({'id_neigh': n, 'cost': g[n][node]['cost']})
+                self.lsp[node]['links'].append({'id_neigh': n, 'cost': g[n][node]['cost']}) # Create HELLO messages
 
                 # Initialize the LSP Database - Part 2
-                self.lspdb[node][node].append((node, n, {'cost': g[n][node]['cost']}))
+                self.lspdb[node][node].append((node, n, {'cost': g[n][node]['cost']})) # For each node we have an entry for its neighbors
            
             # After the HELLO messages, queue events in order to send the LSP
             # Structure of an event ------------------- > (owner, sender, type) 
@@ -152,48 +155,114 @@ class LinkState(RoutingProtocol):
             #   node that owns the event the LS <------------+      |       |
             #   node that sends the LS -----------------------------+       |
             #   type of event ----------------------------------------------+     
-            self.push_event((node, node, 'LS')) 
+            #
+            # If a sequence of nodes is given, first propagate their LS in the network
+            # and print RTs of nodes that receive these messages
+        self.doing_first()
+            
+    def doing_first(self):
+        if self.node_list:
+            for node in self.node_list:
+                self.manage_event((node, node, 'LS'))
 
+            # Simulates the propagation of the LS in the network only for the nodes in the list
+            while True:
+                event = self.next_event()
+                if event:
+                    self.manage_event(event)
+                else:
+                    break
+    
+        # Simulates for the remaining nodes the propagation of the LS in the network
+        for node in sorted(set(self.g.nodes()) - (set(self.node_list) if self.node_list else set())):
+            self.push_event((node, node, 'LS'))
+
+    # Generates the intermediate node view of the newtork, based on what it knows
+    def generate_routing_image(self, graph, path):
+        
+        pos = nx.spring_layout(graph)
+        nx.draw(graph, pos, with_labels=True)
+        labels = nx.get_edge_attributes(graph,'cost')
+        nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
+        plt.savefig(path)
+        self.counter += 1
+        plt.close()
+
+         
+    def construct_rt_iteration(self, source, receiver, owner):
+        tmpRoutingTable = defaultdict(dict)
+
+        tmpGraph = nx.Graph()
+        tmpGraph.add_edges_from(chain.from_iterable([lists for lists in self.lspdb[receiver].values()])) # Each element has the form (src, dst, {'cost': cost})
+        path = f'/tmp/{self.counter}_{receiver}.png'
+        
+        self.generate_routing_image(tmpGraph, path)
+
+        for target in sorted(tmpGraph.nodes()):
+            # If exists a path, search for the shortest one
+            if nx.has_path(tmpGraph, receiver, target): 
+                path = nx.shortest_path(tmpGraph, receiver, target, weight='cost')
+                cost = nx.shortest_path_length(tmpGraph, receiver, target, weight='cost')
+                tmpRoutingTable[target] = {'path': "->".join([str(elem) for elem in path]), 'cost': cost}  # For each target, we store the path and the cost
+
+        # Format of the message:
+        #   [+] Source node
+        #   [+] Destination node
+        #   [+] Routing Table
+        #   [+] LSP of the owner of the LSP
+        #   [+] Image of the Routing View of the receiving node
+        self.messages.append({
+            'source': source,
+            'destination': receiver,
+            'routing_table': tmpRoutingTable, # It contains the formatted paths to reachable nodes
+            'lsp': self.lsp[owner],
+            'routing_view': path
+        })
+
+
+    # After the flooding step reaches the end, this method constructs the Routing Table
     def construct_rt(self):
         for node in sorted(self.g.nodes()):
-            tmp = chain.from_iterable([lists for lists in self.lspdb[node].values()])   # For each node Get all the links 
-                                                                                        # contained in its own LSP Database
 
             tmp_graph = nx.Graph()
-            tmp_graph.add_edges_from(tmp)
+            tmp_graph.add_edges_from(chain.from_iterable([lists for lists in self.lspdb[node].values()]))
 
+            # After all the process is completed (each node's LSPDB has all links in the graph)
             shortest_paths = nx.single_source_dijkstra_path(tmp_graph, node, weight='cost')
             path_lengths = nx.single_source_dijkstra_path_length(tmp_graph, node, weight='cost')
 
             for dest in sorted(self.g.nodes()):
-                self.rt[node][dest] = {'path': shortest_paths[dest], 'cost': path_lengths[dest]}
+                self.rt[node][dest] = {'path': shortest_paths[dest], 'cost': path_lengths[dest]}    
 
-
+        pos = nx.spring_layout(self.g)
+        nx.draw(self.g, pos, with_labels=True)
+        labels = nx.get_edge_attributes(self.g,'cost')
+        nx.draw_networkx_edge_labels(self.g, pos, edge_labels=labels)
+        plt.savefig('/tmp/graph.png')
+        plt.close()
+        print(self.rt[1])
 
     def manage_event(self, event, debug=False):
         owner, sender, _ = event
 
         for neigh in self.g.neighbors(sender):
-            if owner != neigh and self.receiving_lsp(self.lsp[owner], sender, neigh):
+            if owner != neigh and self.receiving_lsp(self.lsp[owner], sender, neigh): # Return False if the LSP is already in the LSPDB of the receiving node
+                if self.node_list and owner in self.node_list: # If node is in the list of nodes we want to inspect, construct its partial RT
+                    print(f'The routing Table of {neigh} is updated by the LSP of {owner}')
+                    self.construct_rt_iteration(sender, neigh, owner)
+                
                 self.push_event((owner, neigh,  'LS'))
 
-                # Add the format message to print
-                msg = f'{sender} -> {neigh} | {owner}>'
-                self.messages.append(msg)
-        
-        if not self.queue: 
-            self.construct_rt()
 
-
-
+    # Update LSPDB of the receiving node accordingly to infomration received
     def receiving_lsp(self, received_lsp, src, dst):
         dst_lspdb = self.lspdb[dst]         # LSP Database of the destination node: dict
         ownerLSP = received_lsp['id']       # Node ID of the owner of the LSP
 
         if ownerLSP in dst_lspdb.keys():    # So far, we check the presence of the LSP in the LSP Database in order 
                                             # to decide if the received LSP is new or not
-            print(f'LSP of {ownerLSP}, sent from {src} is already in LSPDB of {dst}')
-            return False
+            # DEBUG: print(f'LSP of {ownerLSP}, sent from {src} is already in LSPDB of {dst}')
+            return False    # LSPDB of the receivng node won't be updated
 
         self.lspdb[dst][ownerLSP] = [(ownerLSP, neigh['id_neigh'], {'cost': neigh['cost']}) for neigh in received_lsp['links']]
 
