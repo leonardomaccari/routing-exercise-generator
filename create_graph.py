@@ -13,6 +13,9 @@ import networkx as nx
 import time
 import matplotlib.pyplot as plt
 
+l2costs = {'100Mb/s':200000, '1Gb/s':20000, '10Gb/s':2000, '100Gb/s':200}
+
+
 def relabel_nodes(func):
     def wrapper(*args, **kwargs):
         g = func(*args, **kwargs)
@@ -29,8 +32,10 @@ def add_weights(func):
         for frm, to in g.edges:
             if not kwargs['w']:
                 g[frm][to]['cost'] = 1
-            else:
+            elif kwargs['w'] != 'l2':
                 g[frm][to]['cost'] = geometric(1/kwargs['w'])
+            else:
+                g[frm][to]['cost'] = random.sample(list(l2costs.keys()), 1)[0]
         return g
     return wrapper
         
@@ -69,7 +74,7 @@ def make_random_graph(n, w=False, prob=0):
         prob = log(n)/n
     for i in range(100):
         g = nx.erdos_renyi_graph(n, prob)
-        if nx.is_connected(g) and list(nx.simple_cycles(g)):
+        if nx.is_connected(g):# and list(nx.simple_cycles(g)):
             break
     else:
         print("Disconnected graph, increase the edge probability")

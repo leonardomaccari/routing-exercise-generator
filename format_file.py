@@ -55,6 +55,7 @@ def save_document(g, updates, rt, args, fname='./exercise.pdf'):
     html.write_pdf(
         f'{fname}', stylesheets=[css],
         font_config=font_config)
+
 def format_titlepage(g):
     pos = nx.spring_layout(g)
     nx.draw(g, pos, with_labels=True)
