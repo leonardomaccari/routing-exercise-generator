@@ -15,9 +15,10 @@ from weasyprint import HTML, CSS
 import os
 import logging
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', choices=['DV', 'DVPR', 'LS'], help="Routing protocol", 
+    parser.add_argument('-r', choices=['DV', 'DVPR', 'LS'], help="Routing protocol",
                         default='DV')
     parser.add_argument('-n', type=int, help="Graph Size",
                         default='2')
@@ -25,16 +26,15 @@ def parse_arguments():
                         " from a geometric distrbution with average W."
                         " This produces many values<=W, and a few high ones.",
                         default=0)
-    parser.add_argument('-g', choices=['random', 'line', 'grid', 'full_mesh'], 
+    parser.add_argument('-g', choices=['random', 'line', 'grid', 'full_mesh'],
                         help="Type of Graph", default='line')
     parser.add_argument('-f', type=str, help='File where to save the exercise',
-                         default='./exercise.pdf')
+                        default='./exercise.pdf')
     parser.add_argument('-s', type=int, help='Random seed to use')
     parser.add_argument('-l', type=str, nargs='+', help='Insert nodes that will generate LSP first. It works \
                         only with LS', default=None)
     args = parser.parse_args()
     return args
-    
 
 
 if __name__ == '__main__':
@@ -52,11 +52,11 @@ if __name__ == '__main__':
             g = create_graph.make_grid_graph(args.n, w=args.w)
         case 'full_mesh':
             g = create_graph.make_full_mesh(args.n, w=args.w)
-    #create_graph.show_graph(g)
+    # create_graph.show_graph(g)
     if args.r == 'DV':
         dv = DistanceVector(g)
     elif args.r == 'DVPR':
-            dv = DistanceVector(g, poison_reverse=True)
+        dv = DistanceVector(g, poison_reverse=True)
     elif args.r == 'LS':
         dv = LinkState(g, node_list=[int(x) for x in args.l])
 
@@ -66,7 +66,6 @@ if __name__ == '__main__':
             dv.manage_event(e)
         else:
             break
-
 
     if args.r == 'LS':
         dv.construct_rt()
@@ -82,6 +81,7 @@ if __name__ == '__main__':
             'routing_tables': dv.rt
         })
 
-        HTML(string=render_html, base_url='./').write_pdf(args.f, stylesheets=[CSS('./template/exercise.css')])
+        HTML(string=render_html, base_url='./').write_pdf(args.f,
+                                                          stylesheets=[CSS('./template/exercise.css')])
     else:
         save_document(g, dv.messages, dv.rt, args, fname=args.f)
