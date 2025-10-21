@@ -33,7 +33,7 @@ css_string ='''
 exercise_text = '''
 Consider the network in the figure and assume that:
 <ul>
-<li> The adoupted routing is {routing} </li>
+<li> The adopted routing is {routing} </li>
 <li> The order of the generation of messages follows the numeric order of routers </li>
 <li> The order of the arrival of messages follows the numeric order of routers </li>
 </ul>
