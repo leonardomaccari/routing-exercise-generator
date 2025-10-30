@@ -9,17 +9,18 @@ import argparse
 import create_graph
 from distance_vector import DistanceVector
 from format_file import save_document
+from spanning_tree import SpanningTree
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', choices=['DV', 'DVPR'], help="Routing protocol", 
+    parser.add_argument('-r', choices=['DV', 'DVPR', 'ST'], help="Routing/Forwarding protocol", 
                         default='DV')
     parser.add_argument('-n', type=int, help="Graph Size",
                         default='2')
-    parser.add_argument('-w', type=int, help="Adds random integer weights"
-                        " from a geometric distrbution with average W."
-                        " This produces many values<=W, and a few high ones.",
+    parser.add_argument('-w', choices=['1', '100', 'l2'], help="Adds integer weights. Constant,"
+                        " from a geometric distrbution with average W (many values<=W,"
+                        " and a few high ones), random based real linklayer speeds.",
                         default=0)
     parser.add_argument('-g', choices=['random', 'line', 'grid', 'full_mesh'], 
                         help="Type of Graph", default='line')
@@ -46,15 +47,17 @@ if __name__ == '__main__':
             g = create_graph.make_full_mesh(args.n, w=args.w)
     #create_graph.show_graph(g)
     if args.r == 'DV':
-        dv = DistanceVector(g)
+        rp = DistanceVector(g)
+    elif args.r == 'ST':
+        rp = SpanningTree(g)
     elif args.r == 'DVPR':
-            dv = DistanceVector(g, poison_reverse=True)
+        rp = DistanceVector(g, poison_reverse=True)
 
     while True:
-        e = dv.next_event()
+        e = rp.next_event()
         if e:
-            dv.manage_event(e)
+            rp.manage_event(e)
         else:
             break
     #create_graph.show_graph(g)
-    save_document(g, dv.messages, dv.rt, args, fname=args.f)
+    save_document(g, rp, args, fname=args.f)

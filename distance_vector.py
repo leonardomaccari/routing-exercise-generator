@@ -11,15 +11,18 @@ import time
 import pprint
 import networkx as nx
 import copy
+import sys
 
 class RoutingProtocol():
+    # this is the cost as computed by Cisco OSPF, the reference 
+    # bandwidth is set 100Gb to make it integer
+
     queue = []
     rt = defaultdict(dict)
     g = None
     messages = []
     max_cost = 10000
     def next_event(self):
-        time.sleep(0.01)
         if self.queue:
             return self.queue.pop(0)
         else:
@@ -55,6 +58,20 @@ class RoutingProtocol():
             except KeyError:
                 return False
         return path_cost == pl
+
+    def cost_to_number(self, cost):
+        # TODO we might want to do something better, like in the comments
+        # Note, this does not work when using Dijkstra, because the link
+        # cost must be a number
+
+        try:
+            link_cost = int(cost)
+        except ValueError:
+            print(f"ERROR: link cost {cost} is not compatible with the protocol, use a different '-w' option")
+            sys.exit(1)
+        return link_cost
+        
+
         
 class DistanceVector(RoutingProtocol):
     def __init__(self, g, debug=False, poison_reverse=False):
@@ -90,7 +107,8 @@ class DistanceVector(RoutingProtocol):
             self.push_event((node,'DV'))
         
     def receive_dv(self, dv, src, dest):
-        link_cost = self.g[dest][src]['cost']
+
+        link_cost = self.cost_to_number(self.g[dest][src]['cost'])
         rt = self.rt[dest]
         modified = False
         for d in dv:
@@ -113,11 +131,30 @@ class DistanceVector(RoutingProtocol):
                     rt[d]['nh'] = src
                     rt[d]['time'] = 0
                     modified = True
-  
-
-
         return modified
                     
     def format_dv(self, dv):
         return '; '.join([f"{d}:{dv[d]['cost']}" for d in sorted(dv)])
+
+    def get_messages(self):
+        return self.messages
+
+    def get_state(self):
+        return self.rt
+
+
+    def format_rt(self):
+        rt_text = '<h2>Final Routing Table</h2>\n'
+        rt_text +='<dl>\n'
+        for host in self.rt:
+            h_rt = self.rt[host]
+            item = f'<dt>{host}</dt>\n'
+            item += '<ol>\n'
+            for dest in h_rt:
+                item += f'<li>{dest}: nh={h_rt[dest]["nh"]}, cost={h_rt[dest]["cost"]}</li>\n'
+            item += '</ol>\n'
+            rt_text += item
+        rt_text += '</dl>\n'
+        return rt_text
+
             

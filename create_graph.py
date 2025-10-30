@@ -30,16 +30,16 @@ def add_weights(func):
     def wrapper(*args, **kwargs):
         g = func(*args, **kwargs)
         for frm, to in g.edges:
-            if not kwargs['w']:
+            if not kwargs['w'] or kwargs['w'] == '1':
                 g[frm][to]['cost'] = 1
-            elif kwargs['w'] != 'l2':
-                g[frm][to]['cost'] = geometric(1/kwargs['w'])
-            else:
+            elif kwargs['w'] == '100':
+                g[frm][to]['cost'] = int(geometric(1/int(kwargs['w']))/10)*10
+            elif kwargs['w'] == 'l2':
                 g[frm][to]['cost'] = random.sample(list(l2costs.keys()), 1)[0]
         return g
     return wrapper
         
-        
+
 def set_seed(seed):
     if not seed:
         seed = int(time.time_ns()%2**32)

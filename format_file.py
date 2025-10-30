@@ -42,14 +42,14 @@ Write down the list of generated messages, and the final routing table.
 You can omit messages that are received but do not alter the routing table of the receing router.
 '''
 
-def save_document(g, updates, rt, args, fname='./exercise.pdf'):
+def save_document(g, rp, args, fname='./exercise.pdf'):
     base_url = os.path.dirname(os.path.realpath(__file__))
     font_config = FontConfiguration()
     body = ''
     body += format_titlepage(g)
     body += exercise_text.format(routing=args.r)
-    body += format_solution(updates)
-    body += format_rt(rt)
+    body += format_solution(rp.get_messages())
+    body += rp.format_rt()
     html = HTML(string=body, base_url=base_url)
     css = CSS(string=css_string, font_config=font_config)
     html.write_pdf(
@@ -78,41 +78,7 @@ def format_solution(updates):
                 '\n</div>\n</ol>'
 
     
-    return  solutions     
-
-def format_rt(rt):
-    rt_text = '<h2>Final Routing Table</h2>\n'
-    rt_text +='<dl>\n'
-    for host in rt:
-        h_rt = rt[host]
-        item = f'<dt>{host}</dt>\n'
-        item += '<ol>\n'
-        for dest in h_rt:
-            item += f'<li>{dest}: nh={h_rt[dest]["nh"]}, cost={h_rt[dest]["cost"]}</li>\n'
-        item += '</ol>\n'
-        rt_text += item
-    rt_text += '</dl>\n'
-    return rt_text
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+    return  solutions
         
         
         
