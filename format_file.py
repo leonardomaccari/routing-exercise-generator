@@ -42,11 +42,11 @@ Write down the list of generated messages, and the final routing table.
 You can omit messages that are received but do not alter the routing table of the receing router.
 '''
 
-def save_document(g, updates, rt, args, fname='./exercise.pdf'):
+def save_document(g, updates, rt, args, seed, fname='./exercise.pdf'):
     base_url = os.path.dirname(os.path.realpath(__file__))
     font_config = FontConfiguration()
     body = ''
-    body += format_titlepage(g)
+    body += format_titlepage(g, seed)
     body += exercise_text.format(routing=args.r)
     body += format_solution(updates)
     body += format_rt(rt)
@@ -55,14 +55,15 @@ def save_document(g, updates, rt, args, fname='./exercise.pdf'):
     html.write_pdf(
         f'{fname}', stylesheets=[css],
         font_config=font_config)
-def format_titlepage(g):
+
+def format_titlepage(g, s):
     pos = nx.spring_layout(g)
     nx.draw(g, pos, with_labels=True)
     labels = nx.get_edge_attributes(g,'cost')
     nx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
     plt.savefig('/tmp/graph.png')
     
-    title='<h1>Routing Exercise</h1>'
+    title=f'<h1>Routing Exercise (seed {s})</h1>'
     img = """
     <div style="text-align: center;">
      <img width="400" src="/tmp/graph.png">

@@ -22,7 +22,7 @@ def parse_arguments():
                         " This produces many values<=W, and a few high ones.",
                         default=0)
     parser.add_argument('-g', choices=['random', 'line', 'grid', 'full_mesh'], 
-                        help="Type of Graph", default='line')
+                        help="Type of Graph: note that with grid type the size is n**2", default='line')
     parser.add_argument('-f', type=str, help='File where to save the exercise',
                          default='./exercise.pdf')
     parser.add_argument('-s', type=int, help='Random seed to use')
@@ -33,8 +33,7 @@ def parse_arguments():
 
 if __name__ == '__main__':
     args = parse_arguments()
-    if args.s:
-        seed = create_graph.set_seed(args.s)
+    seed = create_graph.set_seed(args.s)
     match args.g:
         case 'random':
             g = create_graph.make_random_graph(args.n, w=args.w)
@@ -57,4 +56,4 @@ if __name__ == '__main__':
         else:
             break
     #create_graph.show_graph(g)
-    save_document(g, dv.messages, dv.rt, args, fname=args.f)
+    save_document(g, dv.messages, dv.rt, args, seed, fname=args.f)
