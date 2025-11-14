@@ -1,6 +1,6 @@
 A Python program that creates a random network with configurable properties, then runs a schematized routing algorithm on it and prints out the final routing table, plus all the exchange of messages that was required to make the routing table converge. 
 
-Right now simple distance vector routing is supported, and line/2dgrid/Erdos/fullmesh graphs can be generated. 
+Right distance vector routing is supported, and line/2dgrid/Erdos/fullmesh graphs can be generated. 
 
 The results are printed in a pdf file with the image of the network and the sequence of events. You have an example in `exercise.pdf`
 
@@ -27,3 +27,5 @@ python3 create-problem.py -r DVPR -n 6 -g random -f ./exercise.pdf -s 3
 ```
 
 And this will recreate exactly the pdf you find in the repository. If you use the same seed you will obtain the same exercise, if you don't specify it, a random one will be chosen. 
+
+All the required Python libraries are specified in the `requirements.txt` file.
