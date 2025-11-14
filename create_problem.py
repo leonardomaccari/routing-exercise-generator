@@ -14,7 +14,6 @@ from pprint import pprint
 from jinja2 import Template
 from weasyprint import HTML
 from create_graph import GraphConfig, GraphNX
-from format_file import RoutingReportPrinter
 
 def parse_arguments():
     """Parse command line arguments"""
@@ -50,7 +49,7 @@ def parse_arguments():
                         default='line')
     
     parser.add_argument('-f',
-                        '--otuput-file',
+                        '--output-file',
                         type=str,
                         help='File where to save the exercise',
                         default='./exercise.pdf')
