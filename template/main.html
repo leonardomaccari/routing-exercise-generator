@@ -7,27 +7,34 @@
 
         <style>
             body {
-                font-family: "Times New Roman", serif;
+                font-family: "Lucida Console", "Courier New", monospace;
                 font-size: 12pt;
             }
+                h1 { font-family: Gentium }
+                h2 { font-family: Gentium }
 
+            /* Use Fira Code for all monospace sections */
             .message-line,
             .mono,
             .lsp {
-                font-family: "Courier New", monospace;
-                white-space: nowrap;   /* <<< KEEP EVERYTHING ON ONE LINE */
+                white-space: nowrap;
                 margin: 0.2em 0;
                 line-height: 1.3em;
             }
 
             .node-label {
-                margin-top: 0.8em 0 0.2em 0;
+                margin-top: 0.8em 0 0 0;
                 font-weight: bold;
             }
+
             .inner {
                 list-style-type: none;
             }
 
+            /* ---- NEW PAGE BEFORE MESSAGE SEQUENCE ---- */
+            h2.message-seq-title {
+                page-break-before: always;
+            }
         </style>
     </head>
     <body>
@@ -51,7 +58,8 @@
             table of the receiving router.
         </p>
 
-        <h2>Message sequence</h2>
+        <!-- Force this section onto a NEW PAGE -->
+        <h2 class="message-seq-title">Message sequence</h2>
 
         <!-- ========================== -->
         <!--     DISTANCE VECTOR        -->
@@ -69,7 +77,6 @@
             {% for entry in messages %}
                 <p class="node-label">Node {{ entry.node }}</p>
 
-                <!-- LSP: neigh:cost; neigh:cost; -->
                 <p class="lsp">
                     [LSP of Node {{ entry.node }}]
                     {% for neigh, cost in entry.lsp.links %}
@@ -77,7 +84,6 @@
                     {% endfor %}
                 </p>
 
-                <!-- Messages: "src -> dst | dst1:cost1; dst2:cost2;" -->
                 <ul class="inner">
                     {% for e in entry.messages %}
                         <li class="message-line">

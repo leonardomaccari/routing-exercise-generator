@@ -5,6 +5,7 @@ import time
 
 from typing import Optional
 
+
 class GraphConfig:
 
     GRAPH_TYPES = [
@@ -23,11 +24,11 @@ class GraphConfig:
     ):
         if graph_type not in self.GRAPH_TYPES:
             raise ValueError(f"Graph type '{graph_type}' is not supported.")
-        
+
         self.graph_type = graph_type
         self.number_of_nodes = number_of_nodes
         self.weight = weight
-        self.seed = seed 
+        self.seed = seed
 
 
 class GraphNX:
@@ -50,7 +51,6 @@ class GraphNX:
         self.generate_graph()
 
         self.log_graph_info()
-    
 
     def generate_graph(self):
 
@@ -64,20 +64,20 @@ class GraphNX:
             case "mesh":
                 self.graph = nx.complete_graph(self.config.number_of_nodes)
 
-
         for frm, to in self.graph.edges:
             if self.config.weight:
-                self.graph[frm][to]['cost'] = np.random.geometric(1/self.config.weight)
+                self.graph[frm][to]['cost'] = np.random.geometric(
+                    1/self.config.weight)
             else:
                 self.graph[frm][to]['cost'] = 1
 
-        self.graph = nx.convert_node_labels_to_integers(self.graph, first_label=1)
+        self.graph = nx.convert_node_labels_to_integers(
+            self.graph, first_label=1)
 
-    
     def make_random_graph(self):
         nodes = self.config.number_of_nodes
         prob = np.log(nodes) / nodes
-        
+
         for _ in range(100):
             g = nx.erdos_renyi_graph(nodes, prob)
             if nx.is_connected(g) and list(nx.cycle_basis(g)):
@@ -87,27 +87,27 @@ class GraphNX:
             exit()
 
         return g
-    
+
     def make_grid_graph(self):
         nodes = self.config.number_of_nodes
         return nx.grid_2d_graph(nodes, nodes)
-    
+
     def show_graph(
-            self, 
-            save_img: bool = False, 
-            output_path: str = "./graph.png"
-        ):
+        self,
+        save_img: bool = False,
+        output_path: str = "./graph.png"
+    ):
         import matplotlib.pyplot as plt
 
         pos = nx.spring_layout(self.graph)
         nx.draw(
-            self.graph, pos, with_labels=True, 
-            node_color='lightblue', node_size=500, 
+            self.graph, pos, with_labels=True,
+            node_color='lightblue', node_size=500,
             font_size=10
         )
-        labels = nx.get_edge_attributes(self.graph,'cost')
+        labels = nx.get_edge_attributes(self.graph, 'cost')
         nx.draw_networkx_edge_labels(self.graph, pos, edge_labels=labels)
-        
+
         if not save_img:
             plt.show()
         else:
