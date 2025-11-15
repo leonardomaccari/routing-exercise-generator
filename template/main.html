@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Routing Exercise</title>
+
+        <style>
+            body {
+                font-family: "Lucida Console", "Courier New", monospace;
+                font-size: 12pt;
+            }
+                h1 { font-family: Gentium }
+                h2 { font-family: Gentium }
+
+            /* Use Fira Code for all monospace sections */
+            .message-line,
+            .mono,
+            .lsp {
+                white-space: nowrap;
+                margin: 0.2em 0;
+                line-height: 1.3em;
+            }
+
+            .node-label {
+                margin-top: 0.8em 0 0 0;
+                font-weight: bold;
+            }
+
+            .inner {
+                list-style-type: none;
+            }
+
+            /* ---- NEW PAGE BEFORE MESSAGE SEQUENCE ---- */
+            h2.message-seq-title {
+                page-break-before: always;
+            }
+        </style>
+    </head>
+    <body>
+
+        <h1>Routing Exercise</h1>
+
+        <div class="image-container">
+            <img src="{{ network_img }}" />
+        </div>
+
+        <p>Consider the network in the figure and assume that:</p>
+        <ul>
+            <li>The adopted routing is {{ routing_protocol }}</li>
+            <li>The order of message generation follows router numeric order</li>
+            <li>The order of message arrival follows router numeric order</li>
+        </ul>
+
+        <p>
+            Write down the list of generated messages and the final routing table.
+            You can omit messages that are received but do not alter the routing
+            table of the receiving router.
+        </p>
+
+        <!-- Force this section onto a NEW PAGE -->
+        <h2 class="message-seq-title">Message sequence</h2>
+
+        <!-- ========================== -->
+        <!--     DISTANCE VECTOR        -->
+        <!-- ========================== -->
+        {% if routing_algorithm == "DV" or routing_algorithm == "DVPR" %}
+            {% for msg in messages %}
+                <p class="message-line">{{ msg }}</p>
+            {% endfor %}
+        {% endif %}
+
+        <!-- ========================== -->
+        <!--        LINK STATE          -->
+        <!-- ========================== -->
+        {% if routing_algorithm == "LS" %}
+            {% for entry in messages %}
+                <p class="node-label">Node {{ entry.node }}</p>
+
+                <p class="lsp">
+                    [LSP of Node {{ entry.node }}]
+                    {% for neigh, cost in entry.lsp.links %}
+                        {{ neigh }}:{{ cost }};
+                    {% endfor %}
+                </p>
+
+                <ul class="inner">
+                    {% for e in entry.messages %}
+                        <li class="message-line">
+                            {{ e.msg }}
+                            {% if e.rt %}
+                                |
+                                {% for dst, info in e.rt.items() %}
+                                    {{ dst }}:{{ info.cost }};
+                                {% endfor %}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+
+            {% endfor %}
+        {% endif %}
+
+        <!-- ========================== -->
+        <!--       ROUTING TABLES       -->
+        <!-- ========================== -->
+        <h2>Final routing tables</h2>
+
+        {% for node, rt in routing_table.items() %}
+            <p class="node-label">Node {{ node }}</p>
+            <ul class="inner">
+                {% for dst, info in rt.items() %}
+                    <li>{{ dst }}: nh={{ info.nh }}, cost={{ info.cost }}</li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+
+    </body>
+</html>

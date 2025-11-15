@@ -1,88 +1,145 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Sep  7 08:17:55 2023
-
-@author: Leonardo Maccari
-"""
-
-import random
-from numpy.random import seed as np_seed, geometric 
-from numpy import log
 import networkx as nx
+import numpy as np
+import random
 import time
-import matplotlib.pyplot as plt
 
-def relabel_nodes(func):
-    def wrapper(*args, **kwargs):
-        g = func(*args, **kwargs)
-        #orig_names = list(g.nodes())
-        #new_names = list(range(1, len(orig_names)+1))
-        #nmap = {orig_names[i]:new_names[i] for i in range(len(orig_names))}
-        #nx.relabel_nodes(g, nmap)
-        return nx.convert_node_labels_to_integers(g, first_label=1)
-    return wrapper
+from typing import Optional
 
-def add_weights(func):
-    def wrapper(*args, **kwargs):
-        g = func(*args, **kwargs)
-        for frm, to in g.edges:
-            if not kwargs['w']:
-                g[frm][to]['cost'] = 1
+
+class GraphConfig:
+
+    GRAPH_TYPES = [
+        "random",
+        "line",
+        "grid",
+        "full_mesh",
+    ]
+
+    def __init__(
+        self,
+        graph_type: str,
+        number_of_nodes: int,
+        weight: int,
+        seed: Optional[int] = None,
+    ):
+        if graph_type not in self.GRAPH_TYPES:
+            raise ValueError(f"Graph type '{graph_type}' is not supported.")
+
+        self.graph_type = graph_type
+        self.number_of_nodes = number_of_nodes
+        self.weight = weight
+        self.seed = seed
+
+
+class GraphNX:
+
+    def __init__(self, config: GraphConfig):
+
+        self.config = config
+
+        if config.seed is None:
+            self.seed = int(time.time_ns() % 2**32)
+            print(f"[INFO] No seed provided. Generated seed = {self.seed}")
+        else:
+            self.seed = config.seed
+            print(f"[INFO] Using provided seed = {self.seed}")
+
+        # 2. Apply seed to all RNGs
+        random.seed(self.seed)
+        np.random.seed(self.seed)
+
+        self.generate_graph()
+
+        self.log_graph_info()
+
+    def generate_graph(self):
+
+        match self.config.graph_type:
+            case "random":
+                self.graph = self.make_random_graph()
+            case "grid":
+                self.graph = self.make_grid_graph()
+            case "line":
+                self.graph = nx.path_graph(self.config.number_of_nodes)
+            case "mesh":
+                self.graph = nx.complete_graph(self.config.number_of_nodes)
+
+        for frm, to in self.graph.edges:
+            if self.config.weight:
+                self.graph[frm][to]['cost'] = np.random.geometric(
+                    1/self.config.weight)
             else:
-                g[frm][to]['cost'] = geometric(1/kwargs['w'])
+                self.graph[frm][to]['cost'] = 1
+
+        self.graph = nx.convert_node_labels_to_integers(
+            self.graph, first_label=1)
+
+    def make_random_graph(self):
+        nodes = self.config.number_of_nodes
+        prob = np.log(nodes) / nodes
+
+        for _ in range(100):
+            g = nx.erdos_renyi_graph(nodes, prob)
+            if nx.is_connected(g) and list(nx.cycle_basis(g)):
+                break
+        else:
+            print("Disconnected graph, increase the edge probability")
+            exit()
+
         return g
-    return wrapper
-        
-        
-def set_seed(seed):
-    if not seed:
-        seed = int(time.time_ns()%2**32)
-    random.seed(seed)
-    np_seed(seed)
-    return seed
 
-@relabel_nodes
-@add_weights
-def make_line(n, w=False):
-    g = nx.path_graph(n)
-    return g
+    def make_grid_graph(self):
+        nodes = self.config.number_of_nodes
+        return nx.grid_2d_graph(nodes, nodes)
 
-@relabel_nodes
-@add_weights
-def make_grid_graph(n, w=False):
-    g = nx.grid_2d_graph(n, n)
-    return g
+    def show_graph(
+        self,
+        save_img: bool = False,
+        output_path: str = "./graph.png"
+    ):
+        import matplotlib.pyplot as plt
 
+        pos = nx.spring_layout(self.graph)
+        nx.draw(
+            self.graph, pos, with_labels=True,
+            node_color='lightblue', node_size=500,
+            font_size=10
+        )
+        labels = nx.get_edge_attributes(self.graph, 'cost')
+        nx.draw_networkx_edge_labels(self.graph, pos, edge_labels=labels)
 
-@relabel_nodes
-@add_weights
-def make_full_mesh(n, w=False):
-    g = nx.complete_graph(n)
-    return g
+        if not save_img:
+            plt.show()
+        else:
+            plt.savefig(output_path)
+            plt.close()
 
+    def log_graph_info(self):
+        """Pretty-print useful graph information."""
+        g = self.graph
 
-@relabel_nodes
-@add_weights
-def make_random_graph(n, w=False, prob=0):
-    if not prob:
-        prob = log(n)/n
-    for i in range(100):
-        g = nx.erdos_renyi_graph(n, prob)
-        if nx.is_connected(g) and list(nx.simple_cycles(g)):
-            break
-    else:
-        print("Disconnected graph, increase the edge probability")
-        exit()
+        num_nodes = g.number_of_nodes()
+        num_edges = g.number_of_edges()
 
-    return g
+        degrees = [deg for _, deg in g.degree()]
+        avg_degree = sum(degrees) / num_nodes if num_nodes > 0 else 0
 
+        costs = [data['cost'] for _, _, data in g.edges(data=True)]
+        min_cost = min(costs) if costs else None
+        max_cost = max(costs) if costs else None
+        avg_cost = sum(costs) / len(costs) if costs else None
 
-    
-def show_graph(g):
-    pos = nx.spring_layout(g)
-    nx.draw(g, pos, with_labels=True)
-    labels = nx.get_edge_attributes(g,'cost')
-    nx.draw_networkx_edge_labels(g, pos, edge_labels=labels)
-    plt.show()
-    
+        print("\n=== GRAPH INFO ===")
+        print(f"Type           : {self.config.graph_type}")
+        print(f"Seed           : {self.seed}")
+        print(f"Nodes          : {num_nodes}")
+        print(f"Edges          : {num_edges}")
+        print(f"Average degree : {avg_degree:.2f}")
+        print(f"Weighted       : {'Yes' if self.config.weight else 'No'}")
+
+        if self.config.weight:
+            print(f"Edge cost min  : {min_cost}")
+            print(f"Edge cost max  : {max_cost}")
+            print(f"Edge cost avg  : {avg_cost:.2f}")
+
+        print("===================\n")
