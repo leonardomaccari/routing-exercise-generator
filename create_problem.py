@@ -134,6 +134,7 @@ class ProblemGenerator:
         return {
             "routing_algorithm": self.routing_algorithm,
             "graph_img_path": "./graph.png",
+            "seed": self.problem_graph.seed,
             "result": result
         }
 
@@ -145,7 +146,8 @@ class ProblemGenerator:
             network_img=result["graph_img_path"],          # <-- was image_path
             routing_algorithm=result["routing_algorithm"],
             messages=result["result"]["messages"],
-            routing_table=result["result"]["routing_table"]
+            routing_table=result["result"]["routing_table"],
+            seed=result["seed"]
         )
 
         # Generate the PDF with WeasyPrint

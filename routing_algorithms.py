@@ -33,6 +33,34 @@ class RoutingAlgorithm(Protocol):
     def simulate(self):
         pass
 
+    def check_rt(self) -> bool:
+
+        for src in self.net_graph.nodes():
+            # True shortest-path distances from src to all other nodes
+            true_dist = nx.single_source_dijkstra_path_length(
+                self.net_graph, src, weight="cost"
+            )
+
+            rt_src = self.rt[src]
+
+            for dst in self.net_graph.nodes():
+                # If there's no path in the real graph
+                if dst not in true_dist:
+                    # DV shouldn't have a route either
+                    if dst in rt_src:
+                        return False
+                    continue
+
+                # DV must have an entry for dst
+                if dst not in rt_src:
+                    return False
+
+                dv_cost = rt_src[dst]["cost"]
+                if dv_cost != true_dist[dst]:
+                    return False
+
+        return True
+
 
 class DistanceVector(RoutingAlgorithm):
 
@@ -130,33 +158,6 @@ class DistanceVector(RoutingAlgorithm):
 
         self.messages.append(f"{msg_direction}: {formatted_dv}")
 
-    def check_rt(self) -> bool:
-
-        for src in self.net_graph.nodes():
-            # True shortest-path distances from src to all other nodes
-            true_dist = nx.single_source_dijkstra_path_length(
-                self.net_graph, src, weight="cost"
-            )
-
-            rt_src = self.rt[src]
-
-            for dst in self.net_graph.nodes():
-                # If there's no path in the real graph
-                if dst not in true_dist:
-                    # DV shouldn't have a route either
-                    if dst in rt_src:
-                        return False
-                    continue
-
-                # DV must have an entry for dst
-                if dst not in rt_src:
-                    return False
-
-                dv_cost = rt_src[dst]["cost"]
-                if dv_cost != true_dist[dst]:
-                    return False
-
-        return True
 
     def simulate(self):
         while True:
