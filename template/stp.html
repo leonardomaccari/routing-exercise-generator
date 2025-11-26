@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>STP Simulation Result</title>
+
+        <style>
+            body {
+                font-family: "Lucida Console", "Courier New", monospace;
+                font-size: 11pt;
+                line-height: 1.4;
+                color: #333;
+                max-width: 900px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .inner {
+                list-style-type: none;
+                padding-left: 20px;
+            }
+
+            /* --- STP Specific Styles --- */
+            
+
+            h2 {
+                margin-top: 40px;
+                border-bottom: 2px solid #333;
+            }
+        </style>
+    </head>
+    <body>
+
+        <h1>Spanning Tree Protocol</h1>
+        <h3>Seed: {{ seed }}</h3>
+
+        {% if network_img %}
+            <div style="text-align: center; margin: 20px;">
+                <img src="{{ network_img }}" alt="Network Graph" />
+            </div>
+        {% endif %}
+
+        <div class="instructions">
+            <p>Consider the network in the figure and assume that:</p>
+            <ul>
+                <li>The adopted algorithm is the <strong>Spanning Tree Protocol (STP)</strong>.</li>
+                <li>BPDUs are formatted as a tuple: <code>(Root ID, Path Cost, Sender ID)</code>.</li>
+                <li>Tie-breaking preference is: <strong>Lowest Root ID</strong>, <strong>Lowest Cost</strong>, <strong>Lowest Sender ID</strong>.</li>
+            </ul>
+
+            <p><strong>Instructions:</strong></p>
+            <p>
+                Write down the sequence of message exchanges. For every BPDU that causes a state change in the receiver, write:
+            </p>
+            <ol>
+                <li>The <code>Sender -> Receiver</code> and the <code>[BPDU]</code> content.</li>
+                <li>The receiver's <strong>Updated Best BPDU</strong>.</li>
+                <li>The receiver's <strong>Updated Port List</strong> using the format <code>[Neighbor:ROLE]</code>.</li>
+            </ol>
+            <p>
+                Use the following abbreviations for roles: 
+                <span>ROOT</span>, 
+                <span>DESI</span> (Designated), and 
+                <span>BLOC</span> (Blocked).
+            </p>
+        </div>
+
+        <h2>Message Sequence</h2>
+        
+        {% for msg in messages %}
+        <div>
+            <div><strong>{{ msg.sender }} -> {{ msg.receiver }}</strong>: [BPDU] {{ msg.sent_bpdu }}</div>
+            <ul class="inner">
+                <li>Updated BPDU of {{ msg.receiver }}: {{ msg.new_best_bpdu }}</li>
+                <li>
+                    Updated Ports of {{ msg.receiver }}: [
+                    {% for neigh, role in msg.new_port_states.items() %}
+                        {% set role_upper = role|upper %}
+                        {% set css_class = "role-root" if role == "root" else ("role-desi" if role == "designated" else "role-bloc") %}
+                        
+                        {{ neigh }}:<span>{{ role_upper[:4] }}</span>{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                    ]
+                </li>
+            </ul>
+        </div>
+        {% endfor %}
+
+        <h2>Final Network State</h2>
+        
+        {% for node in final_bpdus.keys()|sort %}
+            <div style="margin-top: 15px;"><strong>Node {{ node }}</strong></div>
+            <ul class="inner">
+                <li>Cost: {{ final_bpdus[node][1] }}</li>
+                <li>Via: Node {{ final_bpdus[node][2] }}</li>
+                <li>Port State: [
+                    {% for neigh, role in port_state[node].items() %}
+                        {% set role_upper = role|upper %}
+                        {% set css_class = "role-root" if role == "root" else ("role-desi" if role == "designated" else "role-bloc") %}
+                        
+                        {{ neigh }}:<span>{{ role_upper[:4] }}</span>{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                    ]
+                </li>
+            </ul>
+        {% endfor %}
+
+    </body>
+</html>

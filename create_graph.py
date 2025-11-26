@@ -5,7 +5,6 @@ import time
 
 from typing import Optional
 
-
 class GraphConfig:
 
     GRAPH_TYPES = [
@@ -14,6 +13,8 @@ class GraphConfig:
         "grid",
         "full_mesh",
     ]
+    
+    L2COST = {'100Mb/s':200000, '1Gb/s':20000, '10Gb/s':2000, '100Gb/s':200}
 
     def __init__(
         self,
@@ -21,6 +22,7 @@ class GraphConfig:
         number_of_nodes: int,
         weight: int,
         seed: Optional[int] = None,
+        stp_labels: bool = False
     ):
         if graph_type not in self.GRAPH_TYPES:
             raise ValueError(f"Graph type '{graph_type}' is not supported.")
@@ -29,6 +31,7 @@ class GraphConfig:
         self.number_of_nodes = number_of_nodes
         self.weight = weight
         self.seed = seed
+        self.stp_labels = stp_labels
 
 
 class GraphNX:
@@ -49,7 +52,6 @@ class GraphNX:
         np.random.seed(self.seed)
 
         self.generate_graph()
-
         self.log_graph_info()
 
     def generate_graph(self):
@@ -64,15 +66,28 @@ class GraphNX:
             case "mesh":
                 self.graph = nx.complete_graph(self.config.number_of_nodes)
 
-        for frm, to in self.graph.edges:
-            if self.config.weight:
-                self.graph[frm][to]['cost'] = np.random.geometric(
-                    1/self.config.weight)
-            else:
-                self.graph[frm][to]['cost'] = 1
+        self.add_wheights()
 
-        self.graph = nx.convert_node_labels_to_integers(
-            self.graph, first_label=1)
+        
+    def add_wheights(self):
+        for frm, to in self.graph.edges():
+            if self.config.stp_labels:
+                self.graph[frm][to]['cost'] = random.choice(
+                    list(self.config.L2COST.keys())
+                )
+
+            else:
+                if self.config.weight:
+                    self.graph[frm][to]['cost'] = np.random.geometric(
+                        1/self.config.weight)
+                else:
+                    self.graph[frm][to]['cost'] = 1
+            
+
+        if not self.config.stp_labels:
+            self.graph = nx.convert_node_labels_to_integers(
+                self.graph, first_label=1
+            )
 
     def make_random_graph(self):
         nodes = self.config.number_of_nodes
@@ -114,7 +129,7 @@ class GraphNX:
             plt.savefig(output_path)
             plt.close()
 
-    def log_graph_info(self):
+    def log_dv_ls_info(self):
         """Pretty-print useful graph information."""
         g = self.graph
 
@@ -143,3 +158,62 @@ class GraphNX:
             print(f"Edge cost avg  : {avg_cost:.2f}")
 
         print("===================\n")
+
+    def log_stp_info(self):
+        """Pretty-print useful graph information for STP."""
+        g = self.graph
+
+        num_nodes = g.number_of_nodes()
+        num_edges = g.number_of_edges()
+
+        degrees = [deg for _, deg in g.degree()]
+        avg_degree = sum(degrees) / num_nodes if num_nodes > 0 else 0
+
+        multipliers = {'k': 1e3, 'M': 1e6, 'G': 1e9, 'T': 1e12}
+        raw_speeds = []
+
+        for k in self.config.L2COST.keys():
+            clean_s = k.replace("b/s", "")
+            unit = clean_s[-1]
+            number = clean_s[:-1]
+            
+            if unit in multipliers:
+                raw_speeds.append(float(number) * multipliers[unit])
+
+        if raw_speeds:
+            min_val = min(raw_speeds)
+            max_val = max(raw_speeds)
+            avg_val = sum(raw_speeds) / len(raw_speeds)
+        else:
+            min_val, max_val, avg_val = 0, 0, 0
+
+        def fmt(val):
+            if val == 0: return "N/A"
+            for unit, mult in sorted(multipliers.items(), key=lambda x: x[1], reverse=True):
+                if val >= mult:
+                    res = val / mult
+                    num_str = f"{int(res)}" if res.is_integer() else f"{res:.2f}"
+                    return f"{num_str}{unit}b/s"
+            return f"{int(val)}b/s"
+
+        print("\n=== GRAPH INFO ===")
+        print(f"Type           : {self.config.graph_type}")
+        print(f"Seed           : {self.seed}")
+        print(f"Nodes          : {num_nodes}")
+        print(f"Edges          : {num_edges}")
+        print(f"Average degree : {avg_degree:.2f}")
+        print(f"Weighted       : {'Yes' if self.config.weight else 'No'}")
+
+        if self.config.weight and raw_speeds:
+            print(f"Edge speed min  : {fmt(min_val)}")
+            print(f"Edge speed max  : {fmt(max_val)}")
+            print(f"Edge speed avg  : {fmt(avg_val)}")
+        
+        print("===================\n")
+
+
+    def log_graph_info(self):
+        if self.config.stp_labels:
+            self.log_stp_info()
+        else:
+            self.log_dv_ls_info()

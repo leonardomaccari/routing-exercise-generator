@@ -6,11 +6,13 @@ Created on Thu Sep  7 08:21:26 2023
 @author: Leonardo Maccari
 """
 import argparse
+from pprint import pprint
 import sys
 import os
 
 from algorithms.link_state import LinkState
 from algorithms.distance_vector import DistanceVector
+from algorithms.spanning_tree import SpanningTree
 
 from jinja2 import Template
 from weasyprint import HTML
@@ -27,7 +29,7 @@ def parse_arguments():
 
     parser.add_argument('-r',
                         '--routing-algorithm',
-                        choices=['DV', 'DVPR', 'LS'],
+                        choices=['DV', 'DVPR', 'LS', 'STP'],
                         help="Routing Algorithm",
                         default='DV')
 
@@ -82,7 +84,6 @@ class ProblemGenerator:
 
     def __init__(
         self,
-        template_path: str = "./template/main.html"
     ):
 
         args = parse_arguments()
@@ -91,7 +92,8 @@ class ProblemGenerator:
             graph_type=args.graph_type,
             number_of_nodes=args.nodes,
             weight=args.weight,
-            seed=args.seed
+            seed=args.seed,
+            stp_labels=True if args.routing_algorithm == 'STP' else False
         )
 
         self.problem_graph = GraphNX(self.graph_config)
@@ -100,7 +102,7 @@ class ProblemGenerator:
         self.routing_algorithm = args.routing_algorithm
         self.lsp_nodes = args.lsp_nodes
 
-        self.template_path = template_path
+        self.template_path = './template/stp.html' if self.routing_algorithm == 'STP' else './template/routing.html'
         self.output_file = args.output_file
 
     def simulate(self):
@@ -108,20 +110,19 @@ class ProblemGenerator:
         algorithm = None
 
         if self.routing_algorithm == "DV":
-
             algorithm = DistanceVector(self.problem_graph.graph)
 
-        if self.routing_algorithm == "DVPR":
-
+        elif self.routing_algorithm == "DVPR":
             algorithm = DistanceVector(
                 self.problem_graph.graph,
                 poison_reverse=True
             )
 
-        if self.routing_algorithm == "LS":
-
+        elif self.routing_algorithm == "LS":
             algorithm = LinkState(self.problem_graph.graph,
                                   node_list=self.lsp_nodes)
+        elif self.routing_algorithm == "STP":
+            algorithm = SpanningTree(self.problem_graph.graph)
 
         if not algorithm:
             raise ValueError(
@@ -136,21 +137,73 @@ class ProblemGenerator:
             "result": result
         }
 
-    def routing_report(self, result, output_path):
+    def routing_report(self, result):
         with open(self.template_path, "r", encoding="utf-8") as f:
             template = Template(f.read())
 
-        html = template.render(
-            network_img=result["graph_img_path"],          # <-- was image_path
-            routing_algorithm=result["routing_algorithm"],
-            messages=result["result"]["messages"],
-            routing_table=result["result"]["routing_table"],
-            seed=result["seed"]
-        )
+        if self.routing_algorithm == 'STP':
+            html = template.render(
+                seed=result["seed"],
+                network_img=result["graph_img_path"],
+                messages=result["result"]["messages"],
+                final_bpdus=result["result"]["final_bpdus"],
+                port_state=result["result"]["port_state"]
+            )
+
+        else:
+            html = template.render(
+                network_img=result["graph_img_path"],          # <-- was image_path
+                routing_algorithm=result["routing_algorithm"],
+                messages=result["result"]["messages"],
+                routing_table=result["result"]["routing_table"],
+                seed=result["seed"]
+            )
 
         # Generate the PDF with WeasyPrint
         HTML(string=html, base_url=os.getcwd()).write_pdf(self.output_file)
 
+
+# def print_stp_results(results):
+#     messages = results["messages"]
+#     final_bpdus = results["final_bpdus"]
+#     port_states = results["port_state"]
+
+#     print(f"\n{'='*25} SIMULATION HISTORY ({len(messages)} steps) {'='*25}")
+    
+#     for i, msg in enumerate(messages, 1):
+#         s = msg['sender']
+#         r = msg['receiver']
+        
+#         print(f"Step {i:02}: Node {s} sent BPDU {msg['sent_bpdu']} to Node {r}")
+#         print(f"    ↳ {r} updated Best Path: {msg['new_best_bpdu']}")
+        
+#         # Format ports for cleaner display: {2: 'root', 3: 'blocked'} -> 2:ROOT, 3:BLOCKED
+#         formatted_ports = ", ".join(
+#             [f"{neigh}:{role.upper()}" for neigh, role in msg['new_port_states'].items()]
+#         )
+#         print(f"    ↳ {r} Port States: [{formatted_ports}]")
+#         print("-" * 60)
+
+#     print(f"\n{'='*25} FINAL SPANNING TREE STATE {'='*25}")
+#     print(f"{'Node':<6} | {'Root ID':<8} | {'Cost':<6} | {'Port Roles'}")
+#     print("-" * 75)
+
+#     for node in sorted(final_bpdus.keys()):
+#         # Extract BPDU info
+#         root_id, cost, _ = final_bpdus[node]
+        
+#         # Format port roles nicely
+#         node_ports = port_states[node]
+#         roles_str = ", ".join(
+#             [f"{n}→{role.upper()[:4]}" for n, role in sorted(node_ports.items())]
+#         )
+        
+#         print(f"{node:<6} | {root_id:<8} | {cost:<6} | {roles_str}")
+#     print("=" * 75)
+
+# Example Usage:
+# results = stp.simulate()
+# print_stp_results(results)
 
 if __name__ == '__main__':
     # Get the absolute directory path of the script
@@ -161,6 +214,5 @@ if __name__ == '__main__':
     result = generator.simulate()
 
     generator.routing_report(
-        result=result,
-        output_path='./exercise.pdf'
+        result=result
     )
