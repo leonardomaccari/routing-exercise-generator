@@ -9,7 +9,8 @@ import argparse
 import sys
 import os
 
-from pprint import pprint
+from algorithms.link_state import LinkState
+from algorithms.distance_vector import DistanceVector
 
 from jinja2 import Template
 from weasyprint import HTML
@@ -107,12 +108,10 @@ class ProblemGenerator:
         algorithm = None
 
         if self.routing_algorithm == "DV":
-            from routing_algorithms import DistanceVector
 
             algorithm = DistanceVector(self.problem_graph.graph)
 
         if self.routing_algorithm == "DVPR":
-            from routing_algorithms import DistanceVector
 
             algorithm = DistanceVector(
                 self.problem_graph.graph,
@@ -120,7 +119,6 @@ class ProblemGenerator:
             )
 
         if self.routing_algorithm == "LS":
-            from routing_algorithms import LinkState
 
             algorithm = LinkState(self.problem_graph.graph,
                                   node_list=self.lsp_nodes)
