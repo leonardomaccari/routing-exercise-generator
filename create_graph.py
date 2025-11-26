@@ -5,6 +5,7 @@ import time
 
 from typing import Optional
 
+
 class GraphConfig:
 
     GRAPH_TYPES = [
@@ -13,8 +14,9 @@ class GraphConfig:
         "grid",
         "full_mesh",
     ]
-    
-    L2COST = {'100Mb/s':200000, '1Gb/s':20000, '10Gb/s':2000, '100Gb/s':200}
+
+    L2COST = {'100Mb/s': 200000, '1Gb/s': 20000,
+              '10Gb/s': 2000, '100Gb/s': 200}
 
     def __init__(
         self,
@@ -68,7 +70,6 @@ class GraphNX:
 
         self.add_wheights()
 
-        
     def add_wheights(self):
         for frm, to in self.graph.edges():
             if self.config.stp_labels:
@@ -82,7 +83,6 @@ class GraphNX:
                         1/self.config.weight)
                 else:
                     self.graph[frm][to]['cost'] = 1
-            
 
         if not self.config.stp_labels:
             self.graph = nx.convert_node_labels_to_integers(
@@ -176,7 +176,7 @@ class GraphNX:
             clean_s = k.replace("b/s", "")
             unit = clean_s[-1]
             number = clean_s[:-1]
-            
+
             if unit in multipliers:
                 raw_speeds.append(float(number) * multipliers[unit])
 
@@ -188,11 +188,13 @@ class GraphNX:
             min_val, max_val, avg_val = 0, 0, 0
 
         def fmt(val):
-            if val == 0: return "N/A"
+            if val == 0:
+                return "N/A"
             for unit, mult in sorted(multipliers.items(), key=lambda x: x[1], reverse=True):
                 if val >= mult:
                     res = val / mult
-                    num_str = f"{int(res)}" if res.is_integer() else f"{res:.2f}"
+                    num_str = f"{int(res)}" if res.is_integer(
+                    ) else f"{res:.2f}"
                     return f"{num_str}{unit}b/s"
             return f"{int(val)}b/s"
 
@@ -208,9 +210,8 @@ class GraphNX:
             print(f"Edge speed min  : {fmt(min_val)}")
             print(f"Edge speed max  : {fmt(max_val)}")
             print(f"Edge speed avg  : {fmt(avg_val)}")
-        
-        print("===================\n")
 
+        print("===================\n")
 
     def log_graph_info(self):
         if self.config.stp_labels:

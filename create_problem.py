@@ -152,7 +152,8 @@ class ProblemGenerator:
 
         else:
             html = template.render(
-                network_img=result["graph_img_path"],          # <-- was image_path
+                # <-- was image_path
+                network_img=result["graph_img_path"],
                 routing_algorithm=result["routing_algorithm"],
                 messages=result["result"]["messages"],
                 routing_table=result["result"]["routing_table"],
@@ -169,14 +170,14 @@ class ProblemGenerator:
 #     port_states = results["port_state"]
 
 #     print(f"\n{'='*25} SIMULATION HISTORY ({len(messages)} steps) {'='*25}")
-    
+
 #     for i, msg in enumerate(messages, 1):
 #         s = msg['sender']
 #         r = msg['receiver']
-        
+
 #         print(f"Step {i:02}: Node {s} sent BPDU {msg['sent_bpdu']} to Node {r}")
 #         print(f"    ↳ {r} updated Best Path: {msg['new_best_bpdu']}")
-        
+
 #         # Format ports for cleaner display: {2: 'root', 3: 'blocked'} -> 2:ROOT, 3:BLOCKED
 #         formatted_ports = ", ".join(
 #             [f"{neigh}:{role.upper()}" for neigh, role in msg['new_port_states'].items()]
@@ -191,13 +192,13 @@ class ProblemGenerator:
 #     for node in sorted(final_bpdus.keys()):
 #         # Extract BPDU info
 #         root_id, cost, _ = final_bpdus[node]
-        
+
 #         # Format port roles nicely
 #         node_ports = port_states[node]
 #         roles_str = ", ".join(
 #             [f"{n}→{role.upper()[:4]}" for n, role in sorted(node_ports.items())]
 #         )
-        
+
 #         print(f"{node:<6} | {root_id:<8} | {cost:<6} | {roles_str}")
 #     print("=" * 75)
 
