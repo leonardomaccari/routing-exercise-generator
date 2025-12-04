@@ -93,7 +93,7 @@
             <div style="margin-top: 15px;"><strong>Node {{ node }}</strong></div>
             <ul class="inner">
                 <li>Cost: {{ final_bpdus[node][1] }}</li>
-                <li>Via: Node {{ final_bpdus[node][2] }}</li>
+                <!-- <li>Via: Node {{ final_bpdus[node][2] }}</li> -->
                 <li>Port State: [
                     {% for neigh, role in port_state[node].items() %}
                         {% set role_upper = role|upper %}

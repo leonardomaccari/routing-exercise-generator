@@ -1,5 +1,5 @@
 import networkx as nx
-import copy  # Added for deepcopying states
+import copy
 from queue import SimpleQueue
 from collections import defaultdict
 from algorithms.routing_common import Event
@@ -86,19 +86,25 @@ class SpanningTree:
         arrival_bpdu = (incoming_bpdu[0], incoming_bpdu[1] + link_cost, sender)
         current_best = self.bpdu[dst]
 
-        modified = False  # Tracks if we need to notify neighbors
-        state_changed = False  # Tracks if we need to log this event internally
+        modified = False
+        state_changed = False 
 
         # --- LOGIC START ---
 
         # Case 1: Better Root Path
         if arrival_bpdu < current_best:
+
+            tmp_bpdu = (arrival_bpdu[0], arrival_bpdu[1], dst)
+
+            if tmp_bpdu == current_best:
+                return (False, None, None)
+
             for p in self.port_state[dst]:
                 if self.port_state[dst][p] == "root":
                     self.port_state[dst][p] = "blocked"
 
             self.port_state[dst][sender] = "root"
-            self.bpdu[dst] = (arrival_bpdu[0], arrival_bpdu[1], dst)
+            self.bpdu[dst] = tmp_bpdu
 
             modified = True
             state_changed = True
