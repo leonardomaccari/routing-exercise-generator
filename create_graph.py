@@ -65,7 +65,7 @@ class GraphNX:
                 self.graph = self.make_grid_graph()
             case "line":
                 self.graph = nx.path_graph(self.config.number_of_nodes)
-            case "mesh":
+            case "full_mesh":
                 self.graph = nx.complete_graph(self.config.number_of_nodes)
 
         self.add_wheights()
