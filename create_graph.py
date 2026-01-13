@@ -68,15 +68,14 @@ class GraphNX:
             case "full_mesh":
                 self.graph = nx.complete_graph(self.config.number_of_nodes)
 
-        self.add_wheights()
+        self.add_weights()
 
-    def add_wheights(self):
+    def add_weights(self):
         for frm, to in self.graph.edges():
             if self.config.stp_labels:
                 self.graph[frm][to]['cost'] = random.choice(
                     list(self.config.L2COST.keys())
                 )
-
             else:
                 if self.config.weight:
                     self.graph[frm][to]['cost'] = np.random.geometric(
