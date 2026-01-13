@@ -24,8 +24,8 @@ class GraphConfig:
         number_of_nodes: int,
         weight: int,
         seed: Optional[int] = None,
-        stp_labels: bool = False
-    ):
+        stp_labels: bool = False):
+        
         if graph_type not in self.GRAPH_TYPES:
             raise ValueError(f"Graph type '{graph_type}' is not supported.")
 
@@ -67,21 +67,20 @@ class GraphNX:
                 self.graph = nx.path_graph(self.config.number_of_nodes)
             case "full_mesh":
                 self.graph = nx.complete_graph(self.config.number_of_nodes)
-
         self.add_weights()
 
     def add_weights(self):
         for frm, to in self.graph.edges():
-            if self.config.stp_labels:
+
+            if self.config.weight:
                 self.graph[frm][to]['cost'] = random.choice(
-                    list(self.config.L2COST.keys())
-                )
+                         list(self.config.L2COST.keys()))
+                self.config.stp_labels = True
+
+                #self.graph[frm][to]['cost'] = np.random.geometric(
+                #        1/self.config.weight)
             else:
-                if self.config.weight:
-                    self.graph[frm][to]['cost'] = np.random.geometric(
-                        1/self.config.weight)
-                else:
-                    self.graph[frm][to]['cost'] = 1
+                self.graph[frm][to]['cost'] = 1
 
         if not self.config.stp_labels:
             self.graph = nx.convert_node_labels_to_integers(
@@ -104,13 +103,20 @@ class GraphNX:
 
     def make_grid_graph(self):
         nodes = self.config.number_of_nodes
-        return nx.grid_2d_graph(nodes, nodes)
+        g = nx.grid_2d_graph(nodes, nodes)
+        relabels = {}
+        i = 0
+        for node in g.nodes():
+            relabels[node] = i
+            i+=1
+        nx.relabel_nodes(g, relabels, copy=False)
+        return g
 
     def show_graph(
         self,
         save_img: bool = False,
-        output_path: str = "./graph.png"
-    ):
+        output_path: str = "./graph.png"):
+        
         import matplotlib.pyplot as plt
 
         pos = nx.spring_layout(self.graph)

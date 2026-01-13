@@ -47,6 +47,8 @@
                 <li>The adopted algorithm is the <strong>Spanning Tree Protocol (STP)</strong>.</li>
                 <li>BPDUs are formatted as a tuple: <code>(Root ID, Path Cost, Sender ID)</code>.</li>
                 <li>Tie-breaking preference is: <strong>Lowest Root ID</strong>, <strong>Lowest Cost</strong>, <strong>Lowest Sender ID</strong>.</li>
+                <li>For simplicity we don't add the ports to the BPDUs, so assume they are generated in node order (from zero on) and they are received in neighbors order</li>
+                <li>Every port is initialized in an undefined state, and every port must be assigned for the protocol to converge</li>
             </ul>
 
             <p><strong>Instructions:</strong></p>
@@ -61,8 +63,9 @@
             <p>
                 Use the following abbreviations for roles: 
                 <span>ROOT</span>, 
-                <span>DESI</span> (Designated), and 
-                <span>BLOC</span> (Blocked).
+                <span>DESI</span> (Designated),  
+                <span>BLOC</span> (Blocked), and
+                <span>UNDE</span> (Undefined).
             </p>
         </div>
 

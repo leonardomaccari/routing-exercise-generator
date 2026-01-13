@@ -41,9 +41,8 @@ def parse_arguments():
 
     parser.add_argument('-w',
                         '--weight',
-                        type=int,
-                        help="Adds random integer weights from a geometric distribution with average W. "
-                             "This produces many values <= W, and a few high ones.",
+                        help="Adds random weights to links in b/s.",
+                        action="store_true",
                         default=0)
 
     parser.add_argument('-g',

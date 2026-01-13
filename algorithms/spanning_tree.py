@@ -19,6 +19,7 @@ class SpanningTree:
         # Structure: node -> (RootID, CostToRoot, SenderID)
         self.bpdu = {}
         self.ev_number = 0
+        self.default_state='undefined'
 
         for node in sorted(self.net_graph.nodes()):
             # Initially, every node thinks it is the Root
@@ -26,8 +27,7 @@ class SpanningTree:
 
             # Initialize ports
             for neigh in self.net_graph[node]:
-                self.port_state[node][neigh] = "blocked"
-
+                self.port_state[node][neigh] = self.default_state
             self.push_event(("BPDU", node))
 
     def next_event(self):
@@ -44,6 +44,13 @@ class SpanningTree:
     def push_event(self, event: Event):
         self.event_queue.put(event)
 
+    def check_convergence(self):
+        for node in self.port_state: 
+            for port in self.port_state: 
+                if port ==self.default_state:
+                    return False 
+        return True
+        
     def manage_event(self, event: Event):
         _, node = event
 
@@ -67,8 +74,8 @@ class SpanningTree:
                     "new_port_states": new_state_ports  # The receiver's new Port map
                 })
 
-                # Propagate the change
-                self.push_event(("BPDU", n))
+        if not self.check_convergence(): 
+            self.push_event(("BPDU", node))
 
     def receive_bpdu(self, incoming_bpdu, dst):
         """
@@ -86,7 +93,6 @@ class SpanningTree:
         arrival_bpdu = (incoming_bpdu[0], incoming_bpdu[1] + link_cost, sender)
         current_best = self.bpdu[dst]
 
-        modified = False
         state_changed = False 
 
         # --- LOGIC START ---
@@ -106,7 +112,6 @@ class SpanningTree:
             self.port_state[dst][sender] = "root"
             self.bpdu[dst] = tmp_bpdu
 
-            modified = True
             state_changed = True
 
         # Case 2: Neighbor has better path -> Block port
@@ -118,15 +123,15 @@ class SpanningTree:
                 # immediately, but usually in simulation, we treat any state change as an event.
 
         # Case 3: We have better path -> Designated Port
-        elif current_best < incoming_bpdu:
+        elif current_best <= incoming_bpdu:
             if self.port_state[dst][sender] != "designated" and self.port_state[dst][sender] != "root":
                 self.port_state[dst][sender] = "designated"
                 state_changed = True
 
-        # Prepare return values
         if state_changed:
             # We return copies to ensure the log history isn't overwritten by future updates
-            return (modified, copy.deepcopy(self.bpdu[dst]), dict(self.port_state[dst]))
+            return (state_changed, copy.deepcopy(self.bpdu[dst]), 
+                    dict(self.port_state[dst]))
         else:
             return (False, None, None)
 
