@@ -60,8 +60,8 @@ class SpanningTree:
         for n in neighs:
             # We pass 'current_bpdu' (what is being sent)
             # We receive back structured data if something changed
-            changed, new_state_bpdu, new_state_ports = self.receive_bpdu(
-                current_bpdu, n)
+            changed, new_state_bpdu, new_state_ports, previous_best, prio_vec \
+                =  self.receive_bpdu(current_bpdu, n)
 
             if changed:
                 # Store structured data instead of a string
@@ -71,7 +71,9 @@ class SpanningTree:
                     "receiver": n,
                     "sent_bpdu": current_bpdu,      # What caused the change
                     "new_best_bpdu": new_state_bpdu,  # The receiver's new Best BPDU
-                    "new_port_states": new_state_ports  # The receiver's new Port map
+                    "new_port_states": new_state_ports,  # The receiver's new Port map
+                    "previous_best": previous_best, # The reciver's BPDU before the change
+                    "prio_vec": prio_vec # the receiver priority vector
                 })
 
         if not self.check_convergence(): 
@@ -131,9 +133,9 @@ class SpanningTree:
         if state_changed:
             # We return copies to ensure the log history isn't overwritten by future updates
             return (state_changed, copy.deepcopy(self.bpdu[dst]), 
-                    dict(self.port_state[dst]))
+                    dict(self.port_state[dst]), current_best, arrival_bpdu)
         else:
-            return (False, None, None)
+            return (False, None, None, None, None)
 
     def simulate(self):
         while True:

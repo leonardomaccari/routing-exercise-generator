@@ -76,6 +76,8 @@
         <div>
             <div><strong>{{ msg.sender }} -> {{ msg.receiver }}</strong>: [BPDU] {{ msg.sent_bpdu }}</div>
             <ul class="inner">
+                <li>Current BPDU of {{ msg.receiver }}: {{ msg.previous_best}}</li>
+                <li>Computed Priority Vector: {{ msg.prio_vec}}</li>
                 <li>Updated BPDU of {{ msg.receiver }}: {{ msg.new_best_bpdu }}</li>
                 <li>
                     Updated Ports of {{ msg.receiver }}: [
