@@ -12,7 +12,6 @@ class SpanningTree:
         self.net_graph = graph
         self.event_queue = SimpleQueue()
         self.messages = []
-
         # Structure: node -> {neighbor -> "root"|"designated"|"blocked"}
         self.port_state = defaultdict(dict)
 
@@ -47,7 +46,7 @@ class SpanningTree:
     def check_convergence(self):
         for node in self.port_state: 
             for port in self.port_state: 
-                if port ==self.default_state:
+                if port == self.default_state:
                     return False 
         return True
         
@@ -102,10 +101,13 @@ class SpanningTree:
         # Case 1: Better Root Path
         if arrival_bpdu < current_best:
 
+            # however, it could be that the arrival_bpdu is better not because
+            # the root_id or cost is better. Only because the sender_id is
+            # better than mine. In this case we don't update anything.  
             tmp_bpdu = (arrival_bpdu[0], arrival_bpdu[1], dst)
 
             if tmp_bpdu == current_best:
-                return (False, None, None)
+                return (False, None, None, None, None)
 
             for p in self.port_state[dst]:
                 if self.port_state[dst][p] == "root":
@@ -138,12 +140,25 @@ class SpanningTree:
             return (False, None, None, None, None)
 
     def simulate(self):
+        self.saved_port_state = copy.deepcopy(self.port_state)
         while True:
             event = self.next_event()
             if not event:
-                break
+                # convergence may be temporary. After convergence we need to 
+                # send another round of BPDUs, and check if state changed
+                # if it didn't, then we are done
+                if self.port_state != self.saved_port_state:
+                    self.saved_port_state = copy.deepcopy(self.port_state)
+                    for node in sorted(self.net_graph.nodes()):
+                         self.push_event(("BPDU", node))
+                    event = self.next_event()
+                    self.manage_event(event)
+                else:
+                    break
+            else:
+                self.manage_event(event)
 
-            self.manage_event(event)
+
 
         return {
             "messages": self.messages,

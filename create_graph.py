@@ -73,15 +73,17 @@ class GraphNX:
         for frm, to in self.graph.edges():
 
             if self.config.weight:
-                self.graph[frm][to]['cost'] = random.choice(
-                         list(self.config.L2COST.keys()))
-                self.config.stp_labels = True
+                label = random.choice(list(self.config.L2COST.keys()))
+                cost = self.config.L2COST[label]
+                self.graph[frm][to]['cost'] = cost
+                if self.config.stp_labels:
+                    self.graph[frm][to]['label'] = label
 
                 #self.graph[frm][to]['cost'] = np.random.geometric(
                 #        1/self.config.weight)
             else:
                 self.graph[frm][to]['cost'] = 1
-
+        # double check why this should be used when setting the weights
         if not self.config.stp_labels:
             self.graph = nx.convert_node_labels_to_integers(
                 self.graph, first_label=1
@@ -98,7 +100,6 @@ class GraphNX:
         else:
             print("Disconnected graph, increase the edge probability")
             exit()
-
         return g
 
     def make_grid_graph(self):
@@ -125,7 +126,11 @@ class GraphNX:
             node_color='lightblue', node_size=500,
             font_size=10
         )
-        labels = nx.get_edge_attributes(self.graph, 'cost')
+        if not self.config.stp_labels:
+            labels = {v[0]: f'{v[1]:,}' for v in nx.get_edge_attributes(self.graph, 'cost').items()}
+        else:
+            labels = {v[0]: f'{v[1]}' for v in nx.get_edge_attributes(self.graph, 'label').items()}
+
         nx.draw_networkx_edge_labels(self.graph, pos, edge_labels=labels)
 
         if not save_img:

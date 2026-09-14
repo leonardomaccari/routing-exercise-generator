@@ -150,7 +150,6 @@ class LinkState(RoutingAlgorithm):
                 break
         for node in self.net_graph.nodes:
             self.construct_rt(node)
-
         return {
             "messages": self.messages,
             "routing_table": self.rt

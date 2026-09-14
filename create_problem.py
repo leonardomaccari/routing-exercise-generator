@@ -146,7 +146,8 @@ class ProblemGenerator:
                 network_img=result["graph_img_path"],
                 messages=result["result"]["messages"],
                 final_bpdus=result["result"]["final_bpdus"],
-                port_state=result["result"]["port_state"]
+                port_state=result["result"]["port_state"],
+                routing_protocol="STP"
             )
 
         else:
@@ -156,7 +157,8 @@ class ProblemGenerator:
                 routing_algorithm=result["routing_algorithm"],
                 messages=result["result"]["messages"],
                 routing_table=result["result"]["routing_table"],
-                seed=result["seed"]
+                seed=result["seed"],
+                routing_protocol=self.routing_algorithm
             )
 
         # Generate the PDF with WeasyPrint
